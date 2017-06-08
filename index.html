@@ -48,9 +48,9 @@
 			var last_mult = 0;
 			for (var i = 0; i < stitch_pattern.length; i++)
 			{
-				if (i != 0)
+				if (i !== 0)
 				{
-					if (stitch_pattern[i] != last_mult)
+					if (stitch_pattern[i] !== last_mult)
 					{
 						if (last_mult == 1)
 						{
@@ -98,7 +98,7 @@
 		var crochetSphere = function(rows){
 			//Rows = Number of rows in sphere
 			//Returns a list of stitches per row
-			var max_width = 6.0 /(Math.sin(Math.PI / (rows + 1)));	//Determine what the max width is as a function of the smallest row being equal to six.
+			var max_width = 6.0 /(Math.sin(Math.PI / (rows + 1)));	//Determine what the max number of stitches in a row is if the smallest row being equal to six.
 			var stitches = [];
 			for(var i = 1; i < rows + 1; i++)
 			{
