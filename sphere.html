@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Ideal Sphere Crochet Pattern Calculator</title>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.0/jquery-ui.min.js"></script>
+	<script>
+		var rowPattern = function(pattern, row)
+		{
+			var stitches = [];
+			var stitch_count = pattern[row-1];
+
+			//how many stitches to add or remove on this round?
+			var diff_stitch = pattern[row] - pattern[row-1];
+			
+			//calculate the number of stitches to add or decrease on average for each stitch from the last round
+			var mean_addition = 1.0 * diff_stitch / stitch_count;
+			var change = 0;
+			for (var i = 0; i < stitch_count; i++)
+			{
+				//do one stitch by default
+				var stitch = 1;
+
+				change += mean_addition;
+				if(i < stitch_count - 1)
+				{
+					//add or drop a stitch if change can be rounded to an integer.
+					stitch += Math.floor(change);
+					//save the fraction for the next round
+					change -= Math.floor(change);
+				}
+				else
+				{
+					stitch += Math.round(change);
+					//Last step, so updating change is unnecessary;
+				}
+				stitches.push(stitch);
+			}
+			
+			return stitches;
+			
+		}
+		
+		var prettyPrintRow = function(stitch_pattern)
+		{
+			var output = [];
+			var multiplier = 0;
+			var last_mult = 0;
+			for (var i = 0; i < stitch_pattern.length; i++)
+			{
+				if (i != 0)
+				{
+					if (stitch_pattern[i] != last_mult)
+					{
+						if (last_mult == 1)
+						{
+							output.push("sc " + multiplier + " times");
+						}
+						else
+						{
+							if (last_mult < 1)
+							{
+								output.push("decrease " + String((-1 * last_mult) + 1) + " stitches " + multiplier + " times");
+							}
+							else
+							{
+								output.push("increase " + last_mult + " stitches " + multiplier + " times");
+							}
+						}
+						multiplier = 0;
+					}
+				}
+				multiplier++;
+				last_mult = stitch_pattern[i];
+			}
+			if(last_mult == 1)
+			{
+				output.push("sc " + multiplier + " times");
+			}
+			else if (last_mult < 1)
+			{
+				output.push("decrease " + String((-1 * last_mult) + 1) + " stitches " + multiplier + " times");
+			}
+			else
+			{
+				output.push("increase " + String(last_mult - 1) + " stitches " + multiplier + " times");
+			}
+			return output;
+		}
+		
+		var getRows = function(width, gauge){
+			var stitches = width * (gauge * 1.0 / 4);
+			var rows = Math.PI/Math.asin(6.0/stitches); //Algebreically determined from max_width equation in crochetSphere()
+			console.log(stitches);
+			return rows;
+		}
+	
+		var crochetSphere = function(rows){
+			//Rows = Number of rows in sphere
+			//Returns a list of stitches per row
+			var max_width = 6.0 /(Math.sin(Math.PI / (rows + 1)));	//Determine what the max width is as a function of the smallest row being equal to six.
+			var stitches = [];
+			for(var i = 1; i < rows + 1; i++)
+			{
+				var width = Math.sin(Math.PI * (i * 1.0 / (rows + 1)));
+				var stitch = Math.round(width * max_width);
+				//console.log(stitch);
+				stitches.push(stitch);
+			}
+			return stitches;
+		};
+		
+		$(function(){
+			$("#pattern").submit(function(){
+				$("#pattern_output").html("<ol id='steps'></ol>");
+				$("#steps").hide();
+				var rows = $("#rows").val();
+				var pattern = crochetSphere(parseInt(rows));
+				var output = "";
+				for(var i = 0; i < pattern.length; i++)
+				{
+					var step = pattern[i] + " stitches";
+					if (i > 0){
+						if (pattern[i]-pattern[i-1] > 0)
+						{
+							step += " (increase " + (pattern[i]-pattern[i-1]) + " stitches)";
+						}
+						else if (pattern[i]-pattern[i-1] < 0){
+							step += " (decrease " + (pattern[i-1]-pattern[i]) + " stitches)";
+						}
+					}
+					$("#steps").append($("<li>").text(step).append($("<div>").text(prettyPrintRow(rowPattern(pattern, i))).addClass("substep").hide()));
+					$("#show").fadeIn();
+				}
+				$("#steps").slideDown();
+				return false;
+			});
+			$("#show").click(function()
+			{
+				$(".substep").slideToggle();
+			});
+			
+			$("#circumfrence").submit(function(){
+				var width = $("#width").val();
+				var gauge = $("#gauge").val()
+				var rows = getRows(parseFloat(width), parseFloat(gauge));
+				$("#rows").val(Math.ceil(rows));
+				return false;
+			});
+		});
+	</script>
+	<style type="text/css">
+		body {
+			background: #C9EAF3;
+			font-family: Arial;
+		}
+		
+		#wrapper {
+			width: 960px;
+			margin-left: 5em;
+			background: #DDDDFF;
+			padding: 0em 1em;
+			border: 2px solid black;
+		}
+		
+		#calculator {
+			width:60%;
+			background: #FFF;
+			padding: 1em;
+			border: solid 2px #000;
+		}
+		
+		#pattern_output {
+			height: 400px;
+			overflow: auto;
+		}
+		
+		#show {
+			display:none;
+		}
+	</style>
+	</head>
+
+<body>
+	<div id="wrapper">
+		<h1>Crocheted Ideal Sphere Pattern Calculator</h1>
+		<p>Generate a sphere pattern for an arbitrary number of rows.</p>
+		<p>Note: We start with six stitches in the first row, as it's a useful convention for amigurumi-makers, who are used to crocheting from six in magic ring.</p>
+		<div id="calculator">
+			<h2>Calculator</h2>
+			<form id="circumfrence">
+				<strong>Step 1: </strong> Desired Circumfrence (inches): <input type="text" name="width" id="width"><br />
+				Gauge (rows per 4 inches): <input type="text" name="gauge" id="gauge">
+				<input type="submit" name="Width_Calc" class="button">
+			</form>
+			<form id="pattern">
+				<strong>Step 2: </strong> Rows <input type="text" name="rows" id="rows">
+				<input type="submit" value="Calculate" class="button">
+			</form>
+			<input type="submit" value="Toggle individual stitches" class="button" id="show">
+			<div id="pattern_output">
+			</div>
+		</div><!--end #calculator-->
+		<h2>Theory</h2>
+		<p>
+			The idea behind the calculator is to create an ideal sphere, using stitches as a unit of circumfrence.  Given an arbitrary number of rows,
+			we can calculate the number of rows by growing them proportional to sin(theta), where theta equals the polar angle.  Easily enough, you can calculate
+			the polar angle of a sphere by multiplying pi times the ratio of the sphere you want to calculate, since a sphere's circumfrence is proportional to sin(0) through sin(pi).
+		</p>
+		<p>
+			The above took me a while to wrap my head around, having never learned much about 3D geometry outside of what you learn casually in College Prep Algebra and Calculus.  The upshot of it is that if you find sin(pi * (step/steps)), you will get the number of stiches for a row.
+		</p>
+		<p>
+			Of course, this turns out a fraction, so to make it into pattern-friendly integers, I rounded the results to the nearest integer, with .5 counting as a round-up condition.  Since six is a fairly common number for amigurumi makers, I decided to base the proportions on that for the smallest stitch.  While the increases do not always space out evenly, they are somewhat more likely to with six.
+		</p>
+		<p>
+			Many thanks to <a href="http://mspremiseconclusion.wordpress.com/2010/03/14/the-ideal-crochet-sphere/">mspremiseconclusion.wordpress.com's pattern</a>, which explains the math well.  I saw it, and I realized that this was a method for producing a sphere that looked great, but did not suit itself to casual pen and paper pattern-writing.  While a person aware of the math could do this with a graphing calculator's table function and no code, doing it via code was a lot more intuitive to me, and I thought I'd share it.
+		</p>
+		<p>
+			Now go make the roundest amigurumis to sell at the cons.
+		</p>
+	</div><!-- end #wrapper -->
+</body>
+</html>
